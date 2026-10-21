@@ -18,8 +18,7 @@ a{color:inherit}
 .page{min-height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden;padding:0 clamp(16px,4vw,48px)}
 .wing{position:absolute;top:0;width:34vw;height:70%;pointer-events:none;opacity:.9}
 .wing.l{left:0;background:linear-gradient(115deg,transparent 40%,#e9e7e3 40.3%,#f4f3f1 52%,transparent 52.3%,transparent 58%,rgba(255,122,26,.35) 58.2%,transparent 58.6%);clip-path:polygon(0 0,100% 0,0 100%)}
-.wing.r{right:0;transform:scaleX(-1);background:inherit}
-.wing.r{background:linear-gradient(115deg,transparent 40%,#e9e7e3 40.3%,#f4f3f1 52%,transparent 52.3%,transparent 58%,rgba(255,122,26,.35) 58.2%,transparent 58.6%);clip-path:polygon(0 0,100% 0,0 100%)}
+.wing.r{right:0;transform:scaleX(-1);background:linear-gradient(115deg,transparent 40%,#e9e7e3 40.3%,#f4f3f1 52%,transparent 52.3%,transparent 58%,rgba(255,122,26,.35) 58.2%,transparent 58.6%);clip-path:polygon(0 0,100% 0,0 100%)}
 header{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
 .brand img{height:46px;width:auto;mix-blend-mode:multiply}
@@ -102,7 +101,6 @@ input[type=date]{font:500 16px var(--bd);padding:11px 14px;border:1px solid var(
 .card p{margin:0 0 4px;font-size:14px;color:var(--mute)}
 .gal{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .gi{position:relative;aspect-ratio:4/3;border:0;border-radius:14px;overflow:hidden;padding:0;background:linear-gradient(135deg,#f1efeb,#e5e2dc);transition:transform .25s,box-shadow .25s}
-.gi:nth-child(1),.gi:nth-child(4){grid-row:span 1}
 .gi img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
 .gi:hover{box-shadow:0 10px 24px rgba(0,0,0,.14)}.gi:hover img,.gi:hover .ph{transform:scale(1.06)}
 .ph{position:absolute;inset:0;display:grid;place-items:center;color:#a8a49c;transition:transform .4s;background:repeating-linear-gradient(135deg,transparent 0 14px,rgba(255,122,26,.07) 14px 28px)}
@@ -133,12 +131,14 @@ input[type=date]{font:500 16px var(--bd);padding:11px 14px;border:1px solid var(
 .pi{position:relative;display:block;width:100%;margin:0 0 12px;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;break-inside:avoid;transition:transform .25s,box-shadow .25s}
 .pi img{display:block;width:100%;height:auto}
 .pi:hover{box-shadow:0 10px 24px rgba(0,0,0,.14)}
-.pi.wait{min-height:150px}
-/* image loading spinner */
+.ov{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+/* spinners */
 @keyframes sp{to{transform:rotate(360deg)}}
+.spin{width:40px;height:40px;border:4px solid var(--soft);border-top-color:var(--or);border-radius:50%;animation:sp .8s linear infinite}
+.loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:44px 0;color:var(--mute);font-size:14px}
 .gi.wait:after,.pi.wait:after,.lbimg.wait:after{content:"";position:absolute;top:50%;left:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border:3px solid var(--soft);border-top-color:var(--or);border-radius:50%;animation:sp .8s linear infinite;pointer-events:none}
 .lbimg.wait:after{border-color:rgba(255,255,255,.25);border-top-color:var(--or)}
-.ov{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.pi.wait{min-height:150px}
 /* ===== mobile polish ===== */
 .btn,.brand b{white-space:nowrap}
 button,.btn,.chip,.c{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -199,97 +199,92 @@ header{padding:10px 0}
 </div>
 
 <script>
-/* ===== Real business data (from theurbancourt.com) ===== */
+/* ===== Business data ===== */
 const WA='918058721480';
 const wa=t=>`https://wa.me/${WA}?text=${encodeURIComponent(t)}`;
 const COURTS=['Court Alpha','Court Beta','Court Gamma'];
 
-/* ===== Easy-to-edit content: add real items here later ===== */
-const IMAGE_FOLDER = 'images';
+/* ===== Easy-to-edit content ===== */
+const IMAGE_FOLDER='images';
+// Optional custom filenames for the gallery, e.g. ['sunset.jpg','night.png']
+const IMAGE_FILES=[];
 
-// Optional: If you use custom filenames (e.g. 'sunset.jpg'), list them here:
-// Example: const IMAGE_FILES = ['court-alpha.jpg', {file:'night.png', title:'Night Play'}];
-const IMAGE_FILES = [];
+// Only needed with a custom domain (github.io is auto-detected): GH={user:'your-username',repo:'your-repo'}
+const GH={user:'',repo:''};
 
-// Default fallback placeholders (shown when 'images/' folder has no images yet)
-const DEFAULT_GALLERY=[
- {src:'',title:'Court Alpha'},{src:'',title:'Court Beta'},{src:'',title:'Court Gamma'},
- {src:'',title:'Sunset View'},{src:'',title:'Night Play'},{src:'',title:'Pink City Skyline'}];
-
-let GALLERY=[...DEFAULT_GALLERY];
+let GALLERY=[{src:''},{src:''},{src:''},{src:''},{src:''},{src:''}]; // placeholders until real photos are found
+let galleryDone=false;
 const TOURNAMENTS=[]; // {name:'', date:'', format:'', note:''}
 const OFFERS=[];      // {title:'', detail:'', terms:''}
 const FOOD=[];        // {category:'Snacks', name:'', price:''}
 
-/* ===== Auto-detect images inside 'images/' folder ===== */
-function formatTitle(filename, idx) {
- const base = filename.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim();
+const SPINNER='<div class="loading"><div class="spin"></div><span>Loading photos…</span></div>';
+const unwait='onload="this.parentNode.classList.remove(\'wait\')" onerror="this.parentNode.classList.remove(\'wait\')"';
 
- return base.replace(/\b\w/g, c => c.toUpperCase());
+/* ===== Image discovery ===== */
+// 1) list a folder through GitHub's API (any filename works; needs a public repo on github.io)
+async function listFolder(folder){
+ try{
+  const onGH=location.hostname.endsWith('github.io');
+  if(!onGH&&!GH.user)return[];
+  const seg=location.pathname.split('/')[1];
+  const user=GH.user||location.hostname.split('.')[0];
+  const repo=GH.repo||(!seg||seg.includes('.')?location.hostname:seg);
+  const r=await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${folder}`);
+  if(!r.ok)return[];
+  return(await r.json())
+   .filter(f=>f.type==='file'&&/\.(jpe?g|png|gif|webp|avif|svg)$/i.test(f.name))
+   .map(f=>f.name)
+   .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+ }catch(e){return[]}
 }
 
-function probeImage(src) {
- return new Promise(resolve => {
-  const img = new Image();
-  img.onload = () => resolve(src);
-  img.onerror = () => resolve(null);
-  img.src = src;
- });
+// 2) fallback: probe numbered names (1.jpg, photo2.png ...) — used locally or if the API is unavailable
+function probeImage(src){
+ return new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(src);img.onerror=()=>resolve(null);img.src=src});
 }
-
-async function probeMany(paths, limit = 6) {
- const out = new Array(paths.length).fill(null);
- let next = 0;
- const worker = async () => { while (next < paths.length) { const k = next++; out[k] = await probeImage(paths[k]); } };
- await Promise.all(Array.from({ length: Math.min(limit, paths.length) }, worker));
+async function probeMany(paths,limit=6){
+ const out=new Array(paths.length).fill(null);let next=0;
+ const worker=async()=>{while(next<paths.length){const k=next++;out[k]=await probeImage(paths[k])}};
+ await Promise.all(Array.from({length:Math.min(limit,paths.length)},worker));
  return out;
 }
-
-async function scanNumbered(folder, prefixes, seen, max = 20) {
- // looks for 1.jpg, 2.png, photo3.webp ... and stops after 3 numbers in a row with no picture (far fewer requests)
- const exts = ['jpg', 'jpeg', 'png', 'webp', 'gif'], found = [];
- let miss = 0;
- for (let n = 1; n <= max && miss < 3; n++) {
-  const batch = [];
-  for (const p of prefixes) for (const ext of exts) {
-   const file = `${p}${n}.${ext}`, path = `${folder}/${file}`;
-   if (!seen.has(path.toLowerCase())) { seen.add(path.toLowerCase()); batch.push({ file, path }); }
+async function scanNumbered(folder,prefixes,seen,max=20){
+ // stops after 3 numbers in a row with no picture
+ const exts=['jpg','jpeg','png','webp','gif'],found=[];let miss=0;
+ for(let n=1;n<=max&&miss<3;n++){
+  const batch=[];
+  for(const p of prefixes)for(const ext of exts){
+   const file=`${p}${n}.${ext}`,path=`${folder}/${file}`;
+   if(!seen.has(path.toLowerCase())){seen.add(path.toLowerCase());batch.push({file,path})}
   }
-  const res = await probeMany(batch.map(b => b.path));
-  let hit = false;
-  res.forEach((ok, i) => { if (ok) { hit = true; found.push({ src: ok, file: batch[i].file }); } });
-  miss = hit ? 0 : miss + 1;
+  const res=await probeMany(batch.map(b=>b.path));
+  let hit=false;
+  res.forEach((ok,i)=>{if(ok){hit=true;found.push({src:ok,file:batch[i].file})}});
+  miss=hit?0:miss+1;
  }
  return found;
 }
 
-async function initGalleryFromFolder() {
- const found = [];
- const seen = new Set();
-
- // 1. Check any custom filenames listed in IMAGE_FILES
- for (let i = 0; i < IMAGE_FILES.length; i++) {
-  const entry = IMAGE_FILES[i];
-  const file = typeof entry === 'string' ? entry : entry.file;
-  const title = (typeof entry === 'object' && entry.title) ? entry.title : formatTitle(file, found.length);
-  const path = `${IMAGE_FOLDER}/${file}`;
-  if (!seen.has(path.toLowerCase()) && await probeImage(path)) {
-   seen.add(path.toLowerCase());
-   found.push({ src: path, title });
-  }
+async function initGalleryFromFolder(){
+ const found=[],seen=new Set();
+ for(const entry of IMAGE_FILES){
+  const file=typeof entry==='string'?entry:entry.file,path=`${IMAGE_FOLDER}/${file}`;
+  if(!seen.has(path.toLowerCase())&&await probeImage(path)){seen.add(path.toLowerCase());found.push({src:path})}
  }
-
- // 2. Auto-scan numbered images (1..20, photo1..20, img1..20, court1..20)
- const prefixes = ['', 'photo', 'img', 'image', 'court'];
- const auto = await scanNumbered(IMAGE_FOLDER, prefixes, seen, 20);
- auto.forEach(a => found.push({ src: a.src}));
-
- if (found.length > 0) {
-  GALLERY = found;
-  if (open && $('#mt').textContent === M.gallery.t) galleryView();
+ const names=await listFolder(IMAGE_FOLDER);
+ if(names.length){
+  names.forEach(n=>{const p=`${IMAGE_FOLDER}/${encodeURIComponent(n)}`;
+   if(!seen.has(p.toLowerCase())){seen.add(p.toLowerCase());found.push({src:p})}});
+ }else{
+  const auto=await scanNumbered(IMAGE_FOLDER,['','photo','img','image','court'],seen,20);
+  auto.forEach(a=>found.push({src:a.src}));
  }
+ if(found.length>0)GALLERY=found;
+ galleryDone=true;
+ if(open&&$('#mt').textContent===M.gallery.t)galleryView();
 }
-setTimeout(initGalleryFromFolder, 800);   // let the page paint first, then look for gallery photos
+setTimeout(initGalleryFromFolder,800);   // let the page paint first
 
 const I={
 slot:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',
@@ -338,10 +333,10 @@ function slotView(){
 
 /* ===== Gallery ===== */
 let gi=0;
-const unwait='onload="this.parentNode.classList.remove(\'wait\')" onerror="this.parentNode.classList.remove(\'wait\')"';
 const gItem=(g,i)=>g.src?`<img src="${g.src}" alt="Gallery photo ${i+1}" loading="lazy" ${unwait}>`:`<div class="ph">${I.gal}</div>`;
 function galleryView(){
- $('#mbd').innerHTML=`<div class="gal">${GALLERY.map((g,i)=>`<button class="gi${g.src?' wait':''}" data-g="${i}" aria-label="Open photo ${i+1}">${gItem(g,i)}</button>`).join('')}</div>${GALLERY.some(g=>!g.src)?'<p class="note">Placeholders shown — add photos (e.g. 1.jpg, 2.jpg) into an "images" folder next to this HTML file to replace these.</p>':''}`;
+ if(!galleryDone){$('#mbd').innerHTML=SPINNER;return}
+ $('#mbd').innerHTML=`<div class="gal">${GALLERY.map((g,i)=>`<button class="gi${g.src?' wait':''}" data-g="${i}" aria-label="Open photo ${i+1}">${gItem(g,i)}</button>`).join('')}</div>${GALLERY.some(g=>!g.src)?'<p class="note">Placeholders shown — add photos into an "images" folder next to this HTML file to replace these.</p>':''}`;
  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>lbShow(+b.dataset.g,GALLERY));
 }
 let LBL=GALLERY;
@@ -366,37 +361,33 @@ food:{t:'Food & Beverages',s:'Refuel after the game',v(){
  $('#mbd').innerHTML=FOOD.length?[...new Set(FOOD.map(f=>f.category))].map(c=>`<div class="lbl">${c}</div><div class="cards">${FOOD.filter(f=>f.category===c).map(f=>`<div class="card"><h5>${f.name}</h5><p>${f.price||''}</p></div>`).join('')}</div>`).join('')
  :empty(I.food,'Food & beverage menu coming soon.','')+'<div class="cats"><div>Snacks</div><div>Beverages</div><div>Refreshments</div></div>'}}};
 
-/* ===== Image folders for Tournaments / Offers / Food (same idea as the gallery) =====
-   Put pictures in these folders next to this HTML file:
-     tournaments/   offers/   food/
-   Name them 1.jpg, 2.png, 3.webp ... (up to 12 each)  OR  list custom names in `files` below,
-   e.g. files:['weekend-open.jpg',{file:'poster.png',title:'Summer Cup'}]
-   If a folder has no images, the page shows the normal "coming soon" message. */
+/* ===== Image folders for Tournaments / Offers / Food =====
+   Put pictures in folders next to this HTML file: tournaments/  offers/  food/
+   Any filename works on GitHub Pages; locally use 1.jpg, 2.png ... (up to 12).
+   If a folder has no images, the normal "coming soon" message is shown. */
 const SECTION_IMAGES={
- tournaments:{folder:'tournaments',files:[],prefixes:['','img','photo','tournament'],found:[],scanned:false},
- offers:{folder:'offers',files:[],prefixes:['','img','photo','offer'],found:[],scanned:false},
- food:{folder:'food',files:[],prefixes:['','img','photo','menu'],found:[],scanned:false}
+ tournaments:{folder:'tournaments',files:[],prefixes:['','img','photo','tournament'],found:[],scanned:false,done:false},
+ offers:{folder:'offers',files:[],prefixes:['','img','photo','offer'],found:[],scanned:false,done:false},
+ food:{folder:'food',files:[],prefixes:['','img','photo','menu'],found:[],scanned:false,done:false}
 };
-function plainTitle(file){
- const base=file.replace(/\.[^/.]+$/,'').replace(/[-_]+/g,' ').trim();
- return /^(tournament|offer|menu|img|photo|image|pic|poster)?\s*\d*$/i.test(base)?'':base.replace(/\b\w/g,c=>c.toUpperCase());
-}
 async function scanSection(key){
  const cfg=SECTION_IMAGES[key],found=[],seen=new Set();
  for(const entry of cfg.files){
   const file=typeof entry==='string'?entry:entry.file,path=`${cfg.folder}/${file}`;
-  if(!seen.has(path.toLowerCase())&&await probeImage(path)){
-   seen.add(path.toLowerCase());
-   found.push({src:path,title:(typeof entry==='object'&&entry.title)?entry.title:plainTitle(file)});
-  }
+  if(!seen.has(path.toLowerCase())&&await probeImage(path)){seen.add(path.toLowerCase());found.push({src:path})}
  }
- const auto=await scanNumbered(cfg.folder,cfg.prefixes,seen,12);
- auto.forEach(a=>found.push({src:a.src,title:plainTitle(a.file)}));
+ const names=await listFolder(cfg.folder);
+ if(names.length){
+  names.forEach(n=>{const p=`${cfg.folder}/${encodeURIComponent(n)}`;
+   if(!seen.has(p.toLowerCase())){seen.add(p.toLowerCase());found.push({src:p})}});
+ }else{
+  const auto=await scanNumbered(cfg.folder,cfg.prefixes,seen,12);
+  auto.forEach(a=>found.push({src:a.src}));
+ }
  cfg.found=found;
- if(found.length){
-  M[key].wide=1;
-  if(open&&$('#mt').textContent===M[key].t){$('#dlg').classList.add('wide');M[key].v();}
- }
+ cfg.done=true;
+ if(found.length)M[key].wide=1;
+ if(open&&$('#mt').textContent===M[key].t){$('#dlg').classList.toggle('wide',!!M[key].wide);M[key].v();}
 }
 const imgGrid=key=>{const f=SECTION_IMAGES[key].found;
  return f.length?`<div class="pgrid">${f.map((g,i)=>`<button class="pi wait" data-pi="${key}:${i}" aria-label="Open photo ${i+1}"><img src="${g.src}" alt="Photo ${i+1}" loading="lazy" ${unwait}></button>`).join('')}</div>`:'';};
@@ -408,7 +399,8 @@ const CTA={
 ['tournaments','offers','food'].forEach(key=>{
  const original=M[key].v;
  M[key].v=function(){
-  original();                                   // existing behaviour: text cards, or the "coming soon" message
+  original();                                   // text cards, or the "coming soon" message
+  if(!SECTION_IMAGES[key].done){const b=$('#mbd');if(b.querySelector('.empty'))b.innerHTML=SPINNER;return;}   // still checking the folder
   const im=imgGrid(key);
   if(!im)return;                                // no images -> exactly as before
   const mb=$('#mbd'),hadText=!mb.querySelector('.empty');
