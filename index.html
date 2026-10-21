@@ -180,8 +180,8 @@ header{padding:10px 0}
  </section>
  <main class="grid" id="grid"></main>
  <footer>
-  <div><span class="fb">The <i>Urban</i> Court</span><br>Rooftop Pickleball · Jaipur<br>3 premium rooftop courts, floodlit for night play.</div>
-  <div><b class="h">Visit</b>BM Tower — Rooftop Courts<br>FE-18, Central Road, Malviya Nagar Industrial Area<br>Jaipur, Rajasthan — 302017<br><a target="_blank" rel="noopener" href="https://maps.google.com/?q=BM+Tower+FE-18+Central+Road+Malviya+Nagar+Industrial+Area+Jaipur+Rajasthan+302017">📍 Open in Google Maps</a></div>
+  <div><span class="fb">The <i>Urban</i> Court</span><br>Rooftop Pickleball · Jaipur<br>A premium rooftop court, floodlit for night play.</div>
+  <div><b class="h">Visit</b>BM Tower — Rooftop Court<br>FE-18, Central Road, Malviya Nagar Industrial Area<br>Jaipur, Rajasthan — 302017<br><a target="_blank" rel="noopener" href="https://maps.google.com/?q=BM+Tower+FE-18+Central+Road+Malviya+Nagar+Industrial+Area+Jaipur+Rajasthan+302017">📍 Open in Google Maps</a></div>
   <div><b class="h">Hours &amp; Contact</b>Mon–Fri: 6:00 AM – 10:00 PM<br>Weekends &amp; Holidays: 5:30 AM – 11:00 PM<br><a href="tel:+918058721480">📞 08058721480</a> · <a target="_blank" rel="noopener" href="https://wa.me/918058721480">💬 WhatsApp</a></div>
   <div class="cp">© The Urban Court, Jaipur. All rights reserved.</div>
  </footer>
@@ -202,7 +202,6 @@ header{padding:10px 0}
 /* ===== Business data ===== */
 const WA='918058721480';
 const wa=t=>`https://wa.me/${WA}?text=${encodeURIComponent(t)}`;
-const COURTS=['Court Alpha','Court Beta','Court Gamma'];
 
 /* ===== Easy-to-edit content ===== */
 const IMAGE_FOLDER='images';
@@ -309,13 +308,13 @@ const empty=(ic,h,p,cta)=>`<div class="empty"><div class="ic">${ic}</div><h4>${h
 const waBtn=(label,msg)=>`<a class="btn sm" target="_blank" rel="noopener" href="${wa(msg)}">${label}</a>`;
 
 /* ===== Slot booking ===== */
-const S={date:'',time:'',players:4,court:'No preference'};
+const S={date:'',time:'',players:4};
 const fmt=m=>{const h=Math.floor(m/60),mm=m%60,ap=h>=12?'PM':'AM',h12=h%12||12;return `${h12}:${String(mm).padStart(2,'0')} ${ap}`};
 function times(){ if(!S.date)return[];
  const d=new Date(S.date+'T00:00'),we=d.getDay()===0||d.getDay()===6;
  const o=we?330:360,c=we?1380:1320,a=[];for(let m=o;m+60<=c;m+=60)a.push(m);return a}
 function slotMsg(){const d=new Date(S.date+'T00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
- return `Hi The Urban Court! 🏓 I would like to book a rooftop pickleball slot at BM Tower, Jaipur.\n\nDate: ${d}\nTime: ${S.time}\nPlayers: ${S.players}\nCourt: ${S.court}\n\nPlease confirm availability and pricing. Thanks!`}
+ return `Hi The Urban Court! 🏓 I would like to book a rooftop pickleball slot at BM Tower, Jaipur.\n\nDate: ${d}\nTime: ${S.time}\nPlayers: ${S.players}\n\nPlease confirm availability and pricing. Thanks!`}
 function slotView(){
  const ts=times();
  if(S.time&&!ts.map(fmt).includes(S.time))S.time='';
@@ -323,14 +322,12 @@ function slotView(){
  <div class="lbl">Date</div><input type="date" id="sd" value="${S.date}" min="${S.min}">
  <div class="lbl">Preferred start time</div>
  <div class="slots">${ts.length?ts.map(m=>`<button class="chip ${fmt(m)===S.time?'on':''}" data-t="${fmt(m)}">${fmt(m)}</button>`).join(''):'<span class="note">Choose a date to see times.</span>'}</div>
- <div class="row" style="gap:28px"><div><div class="lbl">Players</div><div class="step"><button data-p="-1" aria-label="Fewer">−</button><b>${S.players}</b><button data-p="1" aria-label="More">+</button></div></div>
- <div><div class="lbl">Court preference</div><div class="row">${['No preference',...COURTS].map(c=>`<button class="chip ${c===S.court?'on':''}" data-c="${c}">${c}</button>`).join('')}</div></div></div>
- ${S.time?`<div class="sum">Request: <b>${new Date(S.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}, ${S.time}</b> · ${S.players} players · ${S.court}</div>`:''}
+ <div class="lbl">Players</div><div class="step"><button data-p="-1" aria-label="Fewer">−</button><b>${S.players}</b><button data-p="1" aria-label="More">+</button></div>
+ ${S.time?`<div class="sum">Request: <b>${new Date(S.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}, ${S.time}</b> · ${S.players} players</div>`:''}
  <div class="row" style="margin-top:18px;align-items:center">${S.time?`<a class="btn" target="_blank" rel="noopener" href="${wa(slotMsg())}">Book via WhatsApp</a>`:`<button class="btn" disabled>Book via WhatsApp</button>`}<a class="note" style="margin:0" href="tel:+918058721480">or call 08058721480</a></div>
  <p class="note">This is a booking request, not a confirmed reservation. Live availability isn't shown here — our team confirms your slot and pricing on WhatsApp, usually within minutes.<br>Hours: Mon–Fri 6:00 AM–10:00 PM · Weekends & holidays 5:30 AM–11:00 PM.</p>`;
  $('#sd').onchange=e=>{S.date=e.target.value;slotView()};
  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.time=b.dataset.t;slotView()});
- document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{S.court=b.dataset.c;slotView()});
  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.players=Math.min(12,Math.max(1,S.players+ +b.dataset.p));slotView()});
 }
 
