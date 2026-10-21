@@ -110,10 +110,10 @@ input[type=date]{font:500 16px var(--bd);padding:11px 14px;border:1px solid var(
 .lbimg{position:relative;width:100%;height:100%;min-height:0;border-radius:14px;display:grid;place-items:center;overflow:hidden;background:#2a2a2d;color:#bbb}
 .lbimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .lbcap{position:absolute;bottom:20px;left:0;right:0;text-align:center;color:#fff;font:700 15px var(--hd);letter-spacing:.14em;text-transform:uppercase}
-.lbn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:#fff;font-size:20px}
+.lbn{position:absolute;z-index:3;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:#fff;font-size:20px}
 .lbn.p{left:10px}.lbn.n{right:10px}
 .dlg:has(.lb:not([hidden])),.dlg.lbo{height:min(86vh,760px);height:min(86dvh,760px)}
-.lb .x{background:#fff}
+.lb .x{background:#fff;z-index:3}
 @media(max-width:760px){
 .nav a.t{display:none}.brand b{font-size:18px}.brand img{height:38px}
 .grid{grid-template-columns:1fr 1fr;gap:10px}
@@ -212,8 +212,11 @@ const IMAGE_FILES=[];
 // Only needed with a custom domain (github.io is auto-detected): GH={user:'your-username',repo:'your-repo'}
 const GH={user:'',repo:''};
 
+/* Folder flags: true = the folder has photos (look for them); false = skip the search and show the placeholder right away */
+const HAS_IMAGES={images:true,tournaments:true,offers:true,food:true};
+
 let GALLERY=[{src:''},{src:''},{src:''},{src:''},{src:''},{src:''}]; // placeholders until real photos are found
-let galleryDone=false;
+let galleryDone=!HAS_IMAGES.images;
 const TOURNAMENTS=[]; // {name:'', date:'', format:'', note:''}
 const OFFERS=[];      // {title:'', detail:'', terms:''}
 const FOOD=[];        // {category:'Snacks', name:'', price:''}
@@ -284,7 +287,7 @@ async function initGalleryFromFolder(){
  galleryDone=true;
  if(open&&$('#mt').textContent===M.gallery.t)galleryView();
 }
-setTimeout(initGalleryFromFolder,800);   // let the page paint first
+if(HAS_IMAGES.images)setTimeout(initGalleryFromFolder,800);   // let the page paint first
 
 const I={
 slot:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',
@@ -370,6 +373,9 @@ const SECTION_IMAGES={
  offers:{folder:'offers',files:[],prefixes:['','img','photo','offer'],found:[],scanned:false,done:false},
  food:{folder:'food',files:[],prefixes:['','img','photo','menu'],found:[],scanned:false,done:false}
 };
+Object.keys(SECTION_IMAGES).forEach(k=>{SECTION_IMAGES[k].done=!HAS_IMAGES[k]});   // flag false -> nothing to wait for
+// start fetching the flagged folders in the background so photos are ready before the visitor opens them
+setTimeout(()=>Object.keys(SECTION_IMAGES).forEach(k=>{if(HAS_IMAGES[k]&&!SECTION_IMAGES[k].scanned){SECTION_IMAGES[k].scanned=true;scanSection(k)}}),1200);
 async function scanSection(key){
  const cfg=SECTION_IMAGES[key],found=[],seen=new Set();
  for(const entry of cfg.files){
@@ -414,7 +420,7 @@ const CTA={
 let last=null,open=false;
 function openM(k){const m=M[k];last=document.activeElement;
  if(k==='slot'&&!S.min){const d=new Date(),p=n=>String(n).padStart(2,'0');S.min=S.date=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
- $('#mt').textContent=m.t;$('#ms').textContent=m.s;$('#dlg').classList.toggle('wide',!!m.wide);$('#lb').hidden=true;m.v();if(SECTION_IMAGES[k]&&!SECTION_IMAGES[k].scanned){SECTION_IMAGES[k].scanned=true;scanSection(k)}
+ $('#mt').textContent=m.t;$('#ms').textContent=m.s;$('#dlg').classList.toggle('wide',!!m.wide);$('#lb').hidden=true;m.v();if(SECTION_IMAGES[k]&&HAS_IMAGES[k]&&!SECTION_IMAGES[k].scanned){SECTION_IMAGES[k].scanned=true;scanSection(k)}
  const o=$('#ov');o.classList.remove('closing');o.hidden=false;void o.offsetWidth;o.classList.add('open');
  document.documentElement.style.overflow='hidden';open=true;$('#mbd').scrollTop=0;$('#mx').focus()}
 function closeM(){if(!open)return;open=false;const o=$('#ov');o.classList.remove('open');o.classList.add('closing');
